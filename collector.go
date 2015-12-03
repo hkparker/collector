@@ -12,7 +12,7 @@ import (
 	"net/http"
 )
 
-func PostRegularly(frames chan Wireless80211Frame, endpoint string) {
+func PostFrames(frames chan Wireless80211Frame, endpoint string, client http.Client) {
 	for {
 		frame := <-frames
 		flat, _ := json.Marshal(frame)
@@ -20,7 +20,6 @@ func PostRegularly(frames chan Wireless80211Frame, endpoint string) {
 		if err != nil {
 			log.Println(err)
 		}
-		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Println(err)
@@ -29,12 +28,16 @@ func PostRegularly(frames chan Wireless80211Frame, endpoint string) {
 	}
 }
 
+func RateLimitFrame(frame Wireless80211Frame) bool {
+	return false
+}
+
 func main() {
 	var iface = flag.String("interface", "mon0", "interface to sniff")
 	var endpoint = flag.String("endpoint", "http://127.0.0.1:4567/frames", "server to post packet data to")
 	flag.Parse()
 	frames := make(chan Wireless80211Frame, 100)
-	go PostRegularly(frames, *endpoint)
+	go PostFrames(frames, *endpoint, http.Client{})
 
 	if handle, err := pcap.OpenLive(*iface, 1600, true, 1); err != nil {
 		log.Fatal(err)
@@ -56,11 +59,30 @@ func main() {
 			frame := Wireless80211Frame{
 				Length:           radio.Length,
 				TSFT:             radio.TSFT,
-				FlagsRadio:       uint8(radio.Flags),
+				FlagsRadio:       radio.Flags,
+				Rate:             radio.Rate,
+				ChannelFrequency: radio.ChannelFrequency,
+				ChannelFlags:     radio.ChannelFlags,
+				FHSS:             radio.FHSS,
 				DBMAntennaSignal: radio.DBMAntennaSignal,
+				DBMAntennaNoise:  radio.DBMAntennaNoise,
+				LockQuality:      radio.LockQuality,
+				TxAttenuation:    radio.TxAttenuation,
+				DBTxAttenuation:  radio.DBTxAttenuation,
+				DBMTxPower:       radio.DBMTxPower,
+				Antenna:          radio.Antenna,
+				DBAntennaSignal:  radio.DBAntennaSignal,
+				DBAntennaNoise:   radio.DBAntennaNoise,
+				RxFlags:          radio.RxFlags,
+				TxFlags:          radio.TxFlags,
+				RtsRetries:       radio.RtsRetries,
+				DataRetries:      radio.DataRetries,
+				MCS:              radio.MCS,
+				AMPDUStatus:      radio.AMPDUStatus,
+				VHT:              radio.VHT,
 				Type:             fmt.Sprint(ether.Type),
 				Proto:            ether.Proto,
-				Flags80211:       uint8(ether.Flags),
+				Flags80211:       ether.Flags,
 				DurationID:       ether.DurationID,
 				Address1:         fmt.Sprint(ether.Address1),
 				Address2:         fmt.Sprint(ether.Address2),
@@ -74,6 +96,10 @@ func main() {
 			if _, ok := packet.Layer(layers.LayerTypeDot11MgmtBeacon).(*layers.Dot11MgmtBeacon); ok {
 			} else if probe_req, ok := packet.Layer(layers.LayerTypeDot11MgmtProbeReq).(*layers.Dot11MgmtProbeReq); ok {
 				frame.Elements = ParseFrameElements(probe_req.LayerContents())
+			}
+
+			if RateLimitFrame(frame) {
+				continue
 			}
 			frames <- frame
 		}
