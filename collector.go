@@ -15,7 +15,10 @@ import (
 func PostFrames(frames chan Wireless80211Frame, endpoint string, client http.Client) {
 	for {
 		frame := <-frames
-		flat, _ := json.Marshal(frame)
+		flat, err := json.Marshal(frame)
+		if err != nil {
+			log.Println(err)
+		}
 		req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(flat))
 		if err != nil {
 			log.Println(err)
@@ -23,18 +26,22 @@ func PostFrames(frames chan Wireless80211Frame, endpoint string, client http.Cli
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Println(err)
+		} else {
+			resp.Body.Close()
 		}
-		resp.Body.Close()
 	}
 }
 
 func RateLimitFrame(frame Wireless80211Frame) bool {
+	if frame.Type == "MgmtBeacon" {
+		return true
+	}
 	return false
 }
 
 func main() {
 	var iface = flag.String("interface", "mon0", "interface to sniff")
-	var endpoint = flag.String("endpoint", "http://127.0.0.1:4567/frames", "server to post packet data to")
+	var endpoint = flag.String("endpoint", "http://127.0.0.1:8080/frames", "server to post packet g to")
 	flag.Parse()
 	frames := make(chan Wireless80211Frame, 100)
 	go PostFrames(frames, *endpoint, http.Client{})
@@ -94,8 +101,26 @@ func main() {
 			}
 
 			if _, ok := packet.Layer(layers.LayerTypeDot11MgmtBeacon).(*layers.Dot11MgmtBeacon); ok {
-			} else if probe_req, ok := packet.Layer(layers.LayerTypeDot11MgmtProbeReq).(*layers.Dot11MgmtProbeReq); ok {
-				frame.Elements = ParseFrameElements(probe_req.LayerContents())
+			} else if probegreq, ok := packet.Layer(layers.LayerTypeDot11MgmtProbeReq).(*layers.Dot11MgmtProbeReq); ok {
+				frame.Elements = ParseFrameElements(probegreq.LayerContents())
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11Data).(*layers.Dot11Data); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFAck).(*layers.Dot11DataCFAck); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFAckNoData).(*layers.Dot11DataCFAckNoData); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFAckPoll).(*layers.Dot11DataCFAckPoll); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFAckPollNoData).(*layers.Dot11DataCFAckPollNoData); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFPoll).(*layers.Dot11DataCFPoll); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFPollNoData).(*layers.Dot11DataCFPollNoData); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataNull).(*layers.Dot11DataNull); ok {
+				fmt.Println("Dot11DataNull", ether.Type)
+				//	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOS).(*layers.Dot11DataQOS); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSCFAckPollNoData).(*layers.Dot11DataQOSCFAckPollNoData); ok {
+
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSCFPollNoData).(*layers.Dot11DataQOSCFPollNoData); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSData).(*layers.Dot11DataQOSData); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSDataCFAck).(*layers.Dot11DataQOSDataCFAck); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSDataCFAckPoll).(*layers.Dot11DataQOSDataCFAckPoll); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSDataCFPoll).(*layers.Dot11DataQOSDataCFPoll); ok {
+			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSNull).(*layers.Dot11DataQOSNull); ok {
 			}
 
 			if RateLimitFrame(frame) {
