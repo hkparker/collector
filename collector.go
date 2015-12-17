@@ -13,6 +13,7 @@ import (
 )
 
 func PostFrames(frames chan Wireless80211Frame, endpoint string, client http.Client) {
+	// define the http client here, also use websockets instead of posting
 	for {
 		frame := <-frames
 		flat, err := json.Marshal(frame)
@@ -25,7 +26,7 @@ func PostFrames(frames chan Wireless80211Frame, endpoint string, client http.Cli
 		}
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Println(err)
+			log.Println(err) // recreate the client for a few attempts.  sleep to avoid DDoSing it?  dump the frame chan meanwhile
 		} else {
 			resp.Body.Close()
 		}
@@ -34,7 +35,7 @@ func PostFrames(frames chan Wireless80211Frame, endpoint string, client http.Cli
 
 func RateLimitFrame(frame Wireless80211Frame) bool {
 	if frame.Type == "MgmtBeacon" {
-		return true
+		return true // only send an exact match for some beacon properties every second
 	}
 	return false
 }
@@ -100,6 +101,7 @@ func main() {
 				Checksum:         ether.Checksum,
 			}
 
+			// since ether.Type is known, try to lookup the right one
 			if _, ok := packet.Layer(layers.LayerTypeDot11MgmtBeacon).(*layers.Dot11MgmtBeacon); ok {
 			} else if probegreq, ok := packet.Layer(layers.LayerTypeDot11MgmtProbeReq).(*layers.Dot11MgmtProbeReq); ok {
 				frame.Elements = ParseFrameElements(probegreq.LayerContents())
@@ -111,10 +113,8 @@ func main() {
 			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFPoll).(*layers.Dot11DataCFPoll); ok {
 			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFPollNoData).(*layers.Dot11DataCFPollNoData); ok {
 			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataNull).(*layers.Dot11DataNull); ok {
-				fmt.Println("Dot11DataNull", ether.Type)
-				//	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOS).(*layers.Dot11DataQOS); ok {
+				//} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOS).(*layers.Dot11DataQOS); ok {
 			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSCFAckPollNoData).(*layers.Dot11DataQOSCFAckPollNoData); ok {
-
 			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSCFPollNoData).(*layers.Dot11DataQOSCFPollNoData); ok {
 			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSData).(*layers.Dot11DataQOSData); ok {
 			} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSDataCFAck).(*layers.Dot11DataQOSDataCFAck); ok {
