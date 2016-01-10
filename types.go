@@ -2,6 +2,13 @@ package main
 
 import "github.com/google/gopacket/layers"
 
+const WAVE_IFACES = "WAVE_IFACES"
+const WAVE_ENDPOINT = "WAVE_ENDPOINT"
+const WAVE_ORIGIN = "WAVE_ORIGIN"
+const WAVE_CERT = "WAVE_CERT"
+
+type WaveInterfaces []string
+
 var ELEMENT_IDS = map[byte]string{
 	0:   "SSID",
 	1:   "SUPPORTED_RATES",
