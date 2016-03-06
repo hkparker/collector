@@ -1,64 +1,50 @@
 package main
 
 import (
-	"encoding/json"
+	"flag"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"log"
 	"net/http"
-	"os"
+	"strings"
 )
 
-const WAVE_IFACES = "WAVE_IFACES"
-const WAVE_ENDPOINT = "WAVE_ENDPOINT"
-const WAVE_ORIGIN = "WAVE_ORIGIN"
-const WAVE_CERT = "WAVE_CERT"
+var interface_list = *flag.String("interfaces", "mon0", "comma-separated list of network interfaces to collect")
+var endpoint = *flag.String("wave", "127.0.0.1", "Wave server to stream frames to")
+var certificate = *flag.String("certificate", "colector.cert", "TLS client certificate to present to Wave")
 
 var wave_websocket = connectToWave()
 
 func main() {
-	log.SetOutput(os.Stdout)
-	interface_config := os.Getenv(WAVE_IFACES)
-	if interface_config == "" {
-		log.Println("interface config must be set in", WAVE_IFACES)
-		return
-	}
-	interfaces := WaveInterfaces{}
-	err := json.Unmarshal([]byte(interface_config), &interfaces)
-	if err != nil {
-		log.Println("err unpacking interface config:", err)
-		return
-	}
-	endpoint := os.Getenv(WAVE_ENDPOINT)
-	if endpoint == "" {
-		log.Println("endpoint must be set in", WAVE_ENDPOINT)
-		return
-	}
-	origin := os.Getenv(WAVE_ORIGIN)
-	if origin == "" {
-		log.Println("origin must be set in", WAVE_ORIGIN)
-		return
-	}
+	flag.Parse()
+	interfaces := strings.Split(interface_list, ",")
 	frames := make(chan Wireless80211Frame, 100)
-	go streamFrames(frames, endpoint, origin, http.Client{})
+	go streamFrames(frames, endpoint, http.Client{})
 	for _, iface := range interfaces {
 		if handle, err := pcap.OpenLive(iface, 1600, true, 1); err != nil {
-			log.Fatal(err)
-		} else if err := handle.SetBPFFilter(""); err != nil {
-			log.Fatal(err)
+			log.WithFields(log.Fields{
+				"error":     err,
+				"interface": iface,
+			}).Fatal("failed to open pcap handler")
+			//} else if err := handle.SetBPFFilter(""); err != nil {
+			//	log.WithFields(log.Fields{
+			//		"error":     err,
+			//		"interface": iface,
+			//	}).Fatal("failed to set network filter")
 		} else {
+			// as a goroutine
 			packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 			for packet := range packetSource.Packets() {
 				radio, ok := packet.Layer(layers.LayerTypeRadioTap).(*layers.RadioTap)
 				if !ok {
-					log.Println("packet could not be asserted as radio tap")
+					log.Info("frame could not be asserted as radio tap")
 					continue
 				}
 				ether, ok := packet.Layer(layers.LayerTypeDot11).(*layers.Dot11)
 				if !ok {
-					log.Println("packet could not be asserted as 802.11 frame")
+					log.Info("packet could not be asserted as 802.11 frame")
 					continue
 				}
 				frame := Wireless80211Frame{

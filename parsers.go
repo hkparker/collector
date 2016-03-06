@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	log "github.com/Sirupsen/logrus"
 )
 
 func ParseFrameElements(stream []byte) (elements map[string][]byte) {
@@ -11,7 +11,9 @@ func ParseFrameElements(stream []byte) (elements map[string][]byte) {
 
 		field, ok := ELEMENT_IDS[field_id]
 		if !ok {
-			log.Println("encountered unknown element id", field_id)
+			log.WithFields(log.Fields{
+				"id": field_id,
+			}).Warn("unknown element id")
 		}
 
 		field_len, remainder := stream[0], stream[1:]

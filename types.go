@@ -4,8 +4,6 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-type WaveInterfaces []string
-
 var ELEMENT_IDS = map[byte]string{
 	0:   "SSID",
 	1:   "SUPPORTED_RATES",
