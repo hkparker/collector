@@ -6,8 +6,32 @@ collector is part of the [Wave](https://github.com/hkparker/Wave) wireless IDS a
 Installing
 ----------
 
+```
+go get github.com/hkparker/collector
+```
+
 Building
 --------
+
+**Install deps:**
+
+```
+go get github.com/google/gopacket
+go get github.com/google/gopacket/layers
+go get github.com/google/gopacket/pcap
+go get golang.org/x/net/websocket
+```
+
+**Build:**
+
+`go build`
+
+Usage
+-----
+
+```
+
+```
 
 License
 -------

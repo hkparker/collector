@@ -6,40 +6,17 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"golang.org/x/net/websocket"
 	"log"
 	"net/http"
 	"os"
 )
 
-func DiscardUntil(done chan bool, channel chan interface{}) {
+const WAVE_IFACES = "WAVE_IFACES"
+const WAVE_ENDPOINT = "WAVE_ENDPOINT"
+const WAVE_ORIGIN = "WAVE_ORIGIN"
+const WAVE_CERT = "WAVE_CERT"
 
-}
-
-func StreamFrames(frames chan Wireless80211Frame, endpoint, origin string, client http.Client) {
-	ws, err := websocket.Dial(endpoint, "", origin)
-	if err != nil {
-		fmt.Println("failed ws dail: ", err)
-		return // sleep, discard until redail success
-	}
-	for {
-		frame := <-frames
-		flat, err := json.Marshal(frame)
-		if err != nil {
-			log.Println(err)
-		}
-		if _, err := ws.Write([]byte(flat)); err != nil {
-			log.Println(err) // discard and rebuild
-		}
-	}
-}
-
-func RateLimitFrame(frame Wireless80211Frame) bool {
-	if frame.Type == "MgmtBeacon" {
-		return true // only send an exact match for some beacon properties every second
-	}
-	return false
-}
+var wave_websocket = connectToWave()
 
 func main() {
 	log.SetOutput(os.Stdout)
@@ -65,7 +42,7 @@ func main() {
 		return
 	}
 	frames := make(chan Wireless80211Frame, 100)
-	go StreamFrames(frames, endpoint, origin, http.Client{})
+	go streamFrames(frames, endpoint, origin, http.Client{})
 	for _, iface := range interfaces {
 		if handle, err := pcap.OpenLive(iface, 1600, true, 1); err != nil {
 			log.Fatal(err)
@@ -153,7 +130,7 @@ func main() {
 				} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSNull).(*layers.Dot11DataQOSNull); ok {
 				}
 
-				if RateLimitFrame(frame) {
+				if rateLimit(frame) {
 					continue
 				}
 				frames <- frame

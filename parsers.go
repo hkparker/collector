@@ -1,9 +1,10 @@
 package main
 
-import "log"
+import (
+	"log"
+)
 
-func ParseFrameElements(stream []byte) map[string][]byte {
-	elements := make(map[string][]byte)
+func ParseFrameElements(stream []byte) (elements map[string][]byte) {
 	for len(stream) > 0 {
 		field_id, remainder := stream[0], stream[1:]
 		stream = remainder
@@ -24,5 +25,5 @@ func ParseFrameElements(stream []byte) map[string][]byte {
 
 		elements[field] = field_data
 	}
-	return elements
+	return
 }

@@ -1,11 +1,8 @@
 package main
 
-import "github.com/google/gopacket/layers"
-
-const WAVE_IFACES = "WAVE_IFACES"
-const WAVE_ENDPOINT = "WAVE_ENDPOINT"
-const WAVE_ORIGIN = "WAVE_ORIGIN"
-const WAVE_CERT = "WAVE_CERT"
+import (
+	"github.com/google/gopacket/layers"
+)
 
 type WaveInterfaces []string
 
