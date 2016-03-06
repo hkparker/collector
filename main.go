@@ -12,8 +12,9 @@ import (
 )
 
 var interface_list = *flag.String("interfaces", "mon0", "comma-separated list of network interfaces to collect")
-var endpoint = *flag.String("wave", "127.0.0.1", "Wave server to stream frames to")
-var certificate = *flag.String("certificate", "colector.cert", "TLS client certificate to present to Wave")
+var endpoint = *flag.String("wave", "127.0.0.1", "hostname of Wave server to stream frames to")
+var port = *flag.Int("port", 443, "port the Wave server is accessible on")
+var certificate = *flag.String("certificate", "collector.pem", "path to a TLS client certificate to present to Wave")
 
 var wave_websocket = connectToWave()
 

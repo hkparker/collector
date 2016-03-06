@@ -32,7 +32,15 @@ Usage
 -----
 
 ```
-
+Usage of ./collector:
+  -certificate string
+    	path to a TLS client certificate to present to Wave (default "collector.pem")
+  -interfaces string
+    	comma-separated list of network interfaces to collect (default "mon0")
+  -port int
+    	port the Wave server is accessible on (default 443)
+  -wave string
+    	hostname of Wave server to stream frames to (default "127.0.0.1")
 ```
 
 License
