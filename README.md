@@ -24,7 +24,9 @@ go get golang.org/x/net/websocket
 
 **Build:**
 
-`go build`
+```
+go build
+```
 
 Usage
 -----
