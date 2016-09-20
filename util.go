@@ -5,14 +5,32 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"golang.org/x/net/websocket"
 	"net"
-	"net/http"
 )
 
-func connectToWave() (ws net.Conn) {
-	return
+func dialWave(wave_host string) net.Conn {
+	// discard frames while dialing every 5 seconds until success
+	endpoint := endpoint_uri(wave_host)
+	origin := origin_uri(wave_host)
+	log.WithFields(log.Fields{
+		"wave_host": wave_host,
+	}).Info("dialing Wave")
+	ws, err := websocket.Dial(endpoint, "", origin)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":     err,
+			"wave_host": wave_host,
+		}).Error("failed to dial wave")
+		//discardUntil(, frames)
+	} else {
+		log.WithFields(log.Fields{
+			"wave_host": wave_host,
+		}).Info("success dialing Wave, sending frames")
+	}
+	return ws
+
 }
 
-func discardUntil(done chan bool, channel chan interface{}) {
+func discardUntil(done chan bool, channel chan Wireless80211Frame) {
 
 }
 
@@ -23,30 +41,36 @@ func rateLimit(frame Wireless80211Frame) bool {
 	return false
 }
 
-func streamFrames(frames chan Wireless80211Frame, endpoint string, client http.Client) {
-	// Use gorilla client https://github.com/gorilla/websocket/blob/master/client.go
-	origin := endpoint // wont work but gorilla will only need endpoint
-	ws, err := websocket.Dial(endpoint, "", origin)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("failed to dial wave")
-		return // sleep, discard until redail success
-	}
+func origin_uri(wave_host string) string {
+	return ""
+}
+
+func endpoint_uri(wave_host string) string {
+	return ""
+}
+
+func streamFrames(frames chan Wireless80211Frame, wave_host string) {
 	for {
-		frame := <-frames
-		flat, err := json.Marshal(frame)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error": err,
-			}).Warn("failed to marshal frame")
-			continue
-		}
-		if _, err := ws.Write([]byte(flat)); err != nil {
-			log.WithFields(log.Fields{
-				"error": err,
-			}).Error("failed to send frame")
-			// discard until rebuilt
+		ws := dialWave(wave_host)
+		for frame := range frames {
+			flat, err := json.Marshal(frame)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"error": err,
+				}).Warn("failed to marshal frame")
+				continue
+			}
+			if rateLimit(frame) {
+				continue
+			}
+			if _, err := ws.Write([]byte(flat)); err != nil {
+				ws.Close()
+				log.WithFields(log.Fields{
+					"error":     err,
+					"wave_host": wave_host,
+				}).Error("failed to send frame, redailing Wave")
+				break
+			}
 		}
 	}
 }

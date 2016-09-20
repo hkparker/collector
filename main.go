@@ -7,22 +7,19 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"net/http"
 	"strings"
 )
 
 var interface_list = *flag.String("interfaces", "mon0", "comma-separated list of network interfaces to collect")
-var endpoint = *flag.String("wave", "127.0.0.1", "hostname of Wave server to stream frames to")
+var host = *flag.String("wave", "127.0.0.1", "hostname of Wave server to stream frames to")
 var port = *flag.Int("port", 443, "port the Wave server is accessible on")
 var certificate = *flag.String("certificate", "collector.pem", "path to a TLS client certificate to present to Wave")
-
-var wave_websocket = connectToWave()
 
 func main() {
 	flag.Parse()
 	interfaces := strings.Split(interface_list, ",")
 	frames := make(chan Wireless80211Frame, 100)
-	go streamFrames(frames, endpoint, http.Client{})
+	go streamFrames(frames, host)
 	for _, iface := range interfaces {
 		if handle, err := pcap.OpenLive(iface, 1600, true, 1); err != nil {
 			log.WithFields(log.Fields{
