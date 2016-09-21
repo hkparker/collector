@@ -31,6 +31,13 @@ func dialWave(wave_host string) net.Conn {
 }
 
 func discardUntil(done chan bool, channel chan Wireless80211Frame) {
+	for {
+		select {
+		case _ = <-done:
+			return
+		case _ = <-channel:
+		}
+	}
 
 }
 
