@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"time"
 )
 
@@ -25,9 +26,9 @@ func rateLimit(frame Wireless80211Frame) bool {
 }
 
 func origin_uri(wave_host string) string {
-	return ""
+	return "http://" + wave_host + ":" + strconv.Itoa(port) + "/collector"
 }
 
 func endpoint_uri(wave_host string) string {
-	return ""
+	return "ws://" + wave_host + ":" + strconv.Itoa(port) + "/collector"
 }

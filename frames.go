@@ -36,7 +36,7 @@ func sniffInterface(iface string, frames chan Wireless80211Frame) {
 				continue
 			}
 
-			frame := createFrame(packet, radio, ether)
+			frame := createFrame(packet, radio, ether, iface)
 
 			if rateLimit(frame) {
 				continue
@@ -47,7 +47,7 @@ func sniffInterface(iface string, frames chan Wireless80211Frame) {
 	}
 }
 
-func createFrame(packet gopacket.Packet, radio *layers.RadioTap, ether *layers.Dot11) Wireless80211Frame {
+func createFrame(packet gopacket.Packet, radio *layers.RadioTap, ether *layers.Dot11, iface string) Wireless80211Frame {
 	frame := Wireless80211Frame{
 		Length:           radio.Length,
 		TSFT:             radio.TSFT,
@@ -83,6 +83,7 @@ func createFrame(packet gopacket.Packet, radio *layers.RadioTap, ether *layers.D
 		SequenceNumber:   ether.SequenceNumber,
 		FragmentNumber:   ether.FragmentNumber,
 		Checksum:         ether.Checksum,
+		Interface:        iface,
 	}
 
 	frame.parseElements(packet, ether)
@@ -127,12 +128,10 @@ func (frame *Wireless80211Frame) parseElements(packet gopacket.Packet, ether *la
 func streamFrames(frames chan Wireless80211Frame, wave_host string) {
 	var ws net.Conn
 	for {
-		ws = dialWave(wave_host, frames)
+		if !local {
+			ws = dialWave(wave_host, frames)
+		}
 		for frame := range frames {
-			if rateLimit(frame) {
-				continue
-			}
-
 			flat, err := json.Marshal(frame)
 			if err != nil {
 				log.WithFields(log.Fields{
@@ -141,13 +140,18 @@ func streamFrames(frames chan Wireless80211Frame, wave_host string) {
 				continue
 			}
 
-			if _, err := ws.Write([]byte(flat)); err != nil {
-				ws.Close()
-				log.WithFields(log.Fields{
-					"error":     err,
-					"wave_host": wave_host,
-				}).Error("failed to send frame, redailing Wave")
-				break
+			if print {
+				fmt.Println(string(flat))
+			}
+			if !local {
+				if _, err := ws.Write([]byte(flat)); err != nil {
+					ws.Close()
+					log.WithFields(log.Fields{
+						"error":     err,
+						"wave_host": wave_host,
+					}).Error("failed to send frame, redailing Wave")
+					break
+				}
 			}
 		}
 	}

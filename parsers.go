@@ -5,6 +5,7 @@ import (
 )
 
 func ParseFrameElements(stream []byte) (elements map[string][]byte) {
+	elements = map[string][]byte{}
 	for len(stream) > 0 {
 		field_id, remainder := stream[0], stream[1:]
 		stream = remainder

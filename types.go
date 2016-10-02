@@ -52,4 +52,5 @@ type Wireless80211Frame struct {
 	FragmentNumber   uint16
 	Checksum         uint32
 	Elements         map[string][]byte
+	Interface        string
 }
