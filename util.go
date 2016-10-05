@@ -26,9 +26,9 @@ func rateLimit(frame Wireless80211Frame) bool {
 }
 
 func origin_uri(wave_host string) string {
-	return "http://" + wave_host + ":" + strconv.Itoa(port) + "/collector"
+	return "http://" + wave_host + ":" + strconv.Itoa(port) + "/frames"
 }
 
 func endpoint_uri(wave_host string) string {
-	return "ws://" + wave_host + ":" + strconv.Itoa(port) + "/collector"
+	return "ws://" + wave_host + ":" + strconv.Itoa(port) + "/frames"
 }
