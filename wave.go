@@ -1,9 +1,11 @@
 package main
 
 import (
+	"crypto/tls"
 	log "github.com/Sirupsen/logrus"
 	"golang.org/x/net/websocket"
 	"net"
+	"net/url"
 	"time"
 )
 
@@ -15,13 +17,36 @@ func dialWave(wave_host string, frames chan Wireless80211Frame) net.Conn {
 	done := make(chan bool)
 	go discardUntil(done, frames)
 
-	endpoint := endpoint_uri(wave_host)
-	origin := origin_uri(wave_host)
+	endpoint, err := url.Parse(endpoint_uri(wave_host))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Fatal("unable to parse wave uri")
+	}
+	origin, err := url.Parse(origin_uri(wave_host))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Fatal("unable to parse wave uri")
+	}
 
 	var ws net.Conn
+	cert, err := tls.LoadX509KeyPair(certificate, key)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Fatal("failed to load client certificate")
+	}
 	for {
+		config := websocket.Config{
+			Location: endpoint,
+			Origin:   origin,
+			TlsConfig: &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			},
+		}
 		var err error
-		ws, err = websocket.Dial(endpoint, "", origin)
+		ws, err = websocket.DialConfig(&config)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error":     err,
