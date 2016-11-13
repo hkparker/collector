@@ -30,5 +30,5 @@ func origin_uri(wave_host string) string {
 }
 
 func endpoint_uri(wave_host string) string {
-	return "ws://" + wave_host + ":" + strconv.Itoa(port) + "/frames"
+	return "wss://" + wave_host + ":" + strconv.Itoa(port) + "/frames"
 }
