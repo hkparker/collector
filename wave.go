@@ -2,8 +2,10 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	log "github.com/Sirupsen/logrus"
 	"golang.org/x/net/websocket"
+	"io/ioutil"
 	"net"
 	"net/url"
 	"time"
@@ -38,12 +40,24 @@ func dialWave(wave_host string, frames chan Wireless80211Frame) net.Conn {
 		}).Fatal("failed to load client certificate")
 	}
 	for {
+		tls_config := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+		if ca != "" {
+			wave_pool := x509.NewCertPool()
+			wave_ca, err := ioutil.ReadFile(ca)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"ca_file": ca,
+				}).Fatal("Could not load wave ca")
+			}
+			wave_pool.AppendCertsFromPEM(wave_ca)
+			tls_config.RootCAs = wave_pool
+		}
 		config := websocket.Config{
-			Location: endpoint,
-			Origin:   origin,
-			TlsConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			},
+			Location:  endpoint,
+			Origin:    origin,
+			TlsConfig: tls_config,
 		}
 		var err error
 		ws, err = websocket.DialConfig(&config)

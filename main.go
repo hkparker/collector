@@ -10,6 +10,7 @@ var port int
 var local bool
 var certificate string
 var key string
+var ca string
 
 func main() {
 	var interface_list string
@@ -19,6 +20,7 @@ func main() {
 	flag.IntVar(&port, "port", 444, "port the Wave server is accessible on")
 	flag.StringVar(&certificate, "certificate", "collector.crt", "path to a TLS client certificate to present to Wave")
 	flag.StringVar(&key, "key", "collector.key", "path to a TLS client certificate private key")
+	flag.StringVar(&ca, "ca", "", "path to self-signed wave CA to use for server validation")
 	flag.BoolVar(&print, "print", false, "print the frames to standard output")
 	flag.BoolVar(&local, "local", false, "collect frames without streaming them to wave (use with -print)")
 	flag.Parse()
