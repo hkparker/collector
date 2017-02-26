@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	log "github.com/Sirupsen/logrus"
+	"github.com/hkparker/Wave/models"
 	"golang.org/x/net/websocket"
 	"io/ioutil"
 	"net"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-func dialWave(wave_host string, frames chan Wireless80211Frame) net.Conn {
+func dialWave(wave_host string, frames chan models.Wireless80211Frame) net.Conn {
 	log.WithFields(log.Fields{
 		"wave_host": wave_host,
 	}).Info("dialing Wave")
@@ -58,6 +59,7 @@ func dialWave(wave_host string, frames chan Wireless80211Frame) net.Conn {
 			Location:  endpoint,
 			Origin:    origin,
 			TlsConfig: tls_config,
+			Version:   13,
 		}
 		var err error
 		ws, err = websocket.DialConfig(&config)

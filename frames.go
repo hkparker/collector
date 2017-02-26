@@ -7,10 +7,11 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/hkparker/Wave/models"
 	"net"
 )
 
-func sniffInterface(iface string, frames chan Wireless80211Frame) {
+func sniffInterface(iface string, frames chan models.Wireless80211Frame) {
 	if handle, err := pcap.OpenLive(iface, 1600, true, 1); err != nil {
 		log.WithFields(log.Fields{
 			"error":     err,
@@ -47,8 +48,8 @@ func sniffInterface(iface string, frames chan Wireless80211Frame) {
 	}
 }
 
-func createFrame(packet gopacket.Packet, radio *layers.RadioTap, ether *layers.Dot11, iface string) Wireless80211Frame {
-	frame := Wireless80211Frame{
+func createFrame(packet gopacket.Packet, radio *layers.RadioTap, ether *layers.Dot11, iface string) models.Wireless80211Frame {
+	frame := models.Wireless80211Frame{
 		Length:           radio.Length,
 		TSFT:             radio.TSFT,
 		FlagsRadio:       radio.Flags,
@@ -86,46 +87,12 @@ func createFrame(packet gopacket.Packet, radio *layers.RadioTap, ether *layers.D
 		Interface:        iface,
 	}
 
-	frame.parseElements(packet, ether)
+	frame.ParseElements(packet, ether)
 
 	return frame
 }
 
-func (frame *Wireless80211Frame) parseElements(packet gopacket.Packet, ether *layers.Dot11) {
-	// since ether.Type is known, try to lookup the right one
-	//fmt.Println(ether.Type, uint8(ether.Type))
-	//fmt.Println(packet.Layers())
-	switch ether.Type {
-	case 0: //layers.LayerTypeDot11MgmtBeacon:
-		//fmt.Println("its a mgt")
-		//if beacon, ok := packet.Layer(layers.LayerTypeDot11MgmtBeacon).(*layers.Dot11MgmtBeacon); ok {
-		//	fmt.Println("got a beacon", beacon)
-		//	elements = ParseBeaconFrame()
-		//}
-	}
-	if probegreq, ok := packet.Layer(layers.LayerTypeDot11MgmtProbeReq).(*layers.Dot11MgmtProbeReq); ok {
-		//fmt.Println(ether.NextLayerType())
-		frame.Elements = ParseFrameElements(probegreq.LayerContents())
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11Data).(*layers.Dot11Data); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFAck).(*layers.Dot11DataCFAck); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFAckNoData).(*layers.Dot11DataCFAckNoData); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFAckPoll).(*layers.Dot11DataCFAckPoll); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFAckPollNoData).(*layers.Dot11DataCFAckPollNoData); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFPoll).(*layers.Dot11DataCFPoll); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataCFPollNoData).(*layers.Dot11DataCFPollNoData); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataNull).(*layers.Dot11DataNull); ok {
-		//} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOS).(*layers.Dot11DataQOS); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSCFAckPollNoData).(*layers.Dot11DataQOSCFAckPollNoData); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSCFPollNoData).(*layers.Dot11DataQOSCFPollNoData); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSData).(*layers.Dot11DataQOSData); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSDataCFAck).(*layers.Dot11DataQOSDataCFAck); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSDataCFAckPoll).(*layers.Dot11DataQOSDataCFAckPoll); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSDataCFPoll).(*layers.Dot11DataQOSDataCFPoll); ok {
-	} else if _, ok := packet.Layer(layers.LayerTypeDot11DataQOSNull).(*layers.Dot11DataQOSNull); ok {
-	}
-}
-
-func streamFrames(frames chan Wireless80211Frame, wave_host string) {
+func streamFrames(frames chan models.Wireless80211Frame, wave_host string) {
 	var ws net.Conn
 	for {
 		if !local {

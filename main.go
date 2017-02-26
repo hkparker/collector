@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/hkparker/Wave/models"
 	"strings"
 )
 
@@ -26,7 +27,7 @@ func main() {
 	flag.Parse()
 
 	interfaces := strings.Split(interface_list, ",")
-	frames := make(chan Wireless80211Frame, 100)
+	frames := make(chan models.Wireless80211Frame, 100)
 	go streamFrames(frames, host)
 	for _, iface := range interfaces {
 		go sniffInterface(iface, frames)
