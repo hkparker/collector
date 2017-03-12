@@ -14,26 +14,26 @@ import (
 func sniffInterface(iface string, frames chan models.Wireless80211Frame) {
 	if handle, err := pcap.OpenLive(iface, 1600, true, 1); err != nil {
 		log.WithFields(log.Fields{
+			"at":        "sniffInterface",
 			"error":     err,
 			"interface": iface,
 		}).Fatal("failed to open pcap handler")
-		//} else if err := handle.SetBPFFilter(""); err != nil {
-		//	log.WithFields(log.Fields{
-		//		"error":     err,
-		//		"interface": iface,
-		//	}).Fatal("failed to set network filter")
 	} else {
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 		for packet := range packetSource.Packets() {
 			radio, ok := packet.Layer(layers.LayerTypeRadioTap).(*layers.RadioTap)
 			if !ok {
-				log.Info("frame could not be asserted as radio tap")
+				log.WithFields(log.Fields{
+					"at": "sniffInterface",
+				}).Info("frame could not be asserted as radio tap")
 				continue
 			}
 
 			ether, ok := packet.Layer(layers.LayerTypeDot11).(*layers.Dot11)
 			if !ok {
-				log.Info("packet could not be asserted as 802.11 frame")
+				log.WithFields(log.Fields{
+					"at": "sniffInterface",
+				}).Info("packet could not be asserted as 802.11 frame")
 				continue
 			}
 
@@ -102,6 +102,7 @@ func streamFrames(frames chan models.Wireless80211Frame, wave_host string) {
 			flat, err := json.Marshal(frame)
 			if err != nil {
 				log.WithFields(log.Fields{
+					"at":    "streamFrames",
 					"error": err,
 				}).Warn("failed to marshal frame")
 				continue
@@ -114,6 +115,7 @@ func streamFrames(frames chan models.Wireless80211Frame, wave_host string) {
 				if _, err := ws.Write([]byte(flat)); err != nil {
 					ws.Close()
 					log.WithFields(log.Fields{
+						"at":        "streamFrames",
 						"error":     err,
 						"wave_host": wave_host,
 					}).Error("failed to send frame, redailing Wave")

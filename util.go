@@ -21,7 +21,9 @@ func discardUntil(done chan bool, channel chan models.Wireless80211Frame) {
 
 func rateLimit(frame models.Wireless80211Frame) bool {
 	if frame.Type == "MgmtBeacon" {
-		return false //true // only send an exact match for some beacon properties every second
+		// Can be used to filter beacon frames that are
+		// not useful to reduce bandwidth requirements
+		return false
 	}
 	return false
 }

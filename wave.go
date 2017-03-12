@@ -14,6 +14,7 @@ import (
 
 func dialWave(wave_host string, frames chan models.Wireless80211Frame) net.Conn {
 	log.WithFields(log.Fields{
+		"at":        "dialWave",
 		"wave_host": wave_host,
 	}).Info("dialing Wave")
 
@@ -23,12 +24,14 @@ func dialWave(wave_host string, frames chan models.Wireless80211Frame) net.Conn 
 	endpoint, err := url.Parse(endpoint_uri(wave_host))
 	if err != nil {
 		log.WithFields(log.Fields{
+			"at":    "dialWave",
 			"error": err.Error(),
 		}).Fatal("unable to parse wave uri")
 	}
 	origin, err := url.Parse(origin_uri(wave_host))
 	if err != nil {
 		log.WithFields(log.Fields{
+			"at":    "dialWave",
 			"error": err.Error(),
 		}).Fatal("unable to parse wave uri")
 	}
@@ -37,6 +40,7 @@ func dialWave(wave_host string, frames chan models.Wireless80211Frame) net.Conn 
 	cert, err := tls.LoadX509KeyPair(certificate, key)
 	if err != nil {
 		log.WithFields(log.Fields{
+			"at":    "dialWave",
 			"error": err.Error(),
 		}).Fatal("failed to load client certificate")
 	}
@@ -49,6 +53,7 @@ func dialWave(wave_host string, frames chan models.Wireless80211Frame) net.Conn 
 			wave_ca, err := ioutil.ReadFile(ca)
 			if err != nil {
 				log.WithFields(log.Fields{
+					"at":      "dialWave",
 					"ca_file": ca,
 				}).Fatal("Could not load wave ca")
 			}
@@ -65,12 +70,14 @@ func dialWave(wave_host string, frames chan models.Wireless80211Frame) net.Conn 
 		ws, err = websocket.DialConfig(&config)
 		if err != nil {
 			log.WithFields(log.Fields{
+				"at":        "dialWave",
 				"error":     err,
 				"wave_host": wave_host,
 			}).Error("failed to dial wave")
 			time.Sleep(5 * time.Second)
 		} else {
 			log.WithFields(log.Fields{
+				"at":        "dialWave",
 				"wave_host": wave_host,
 			}).Info("success dialing Wave, sending frames")
 			done <- true
